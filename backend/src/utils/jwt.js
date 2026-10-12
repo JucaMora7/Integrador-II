@@ -7,6 +7,7 @@ function generarToken(usuario) {
       id: usuario.id,
       correo: usuario.correo,
       rol: usuario.Rol ? usuario.Rol.nombre : null,
+      empresa_id: usuario.empresa_id,
     },
     env.jwt.secret,
     { expiresIn: env.jwt.expiresIn }
@@ -17,4 +18,7 @@ function verificarToken(token) {
   return jwt.verify(token, env.jwt.secret);
 }
 
-module.exports = { generarToken, verificarToken };
+module.exports = {
+  generarToken,
+  verificarToken
+};

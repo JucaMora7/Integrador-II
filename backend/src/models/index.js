@@ -1,4 +1,6 @@
 const sequelize = require('../config/database');
+
+const Empresa = require('./Empresa');
 const Rol = require('./Rol');
 const Usuario = require('./Usuario');
 const Categoria = require('./Categoria');
@@ -8,36 +10,153 @@ const MovimientoCuenta = require('./MovimientoCuenta');
 const Venta = require('./Venta');
 const Alerta = require('./Alerta');
 
-// Rol 1 -- N Usuario
-Rol.hasMany(Usuario, { foreignKey: 'rol_id' });
-Usuario.belongsTo(Rol, { foreignKey: 'rol_id' });
 
-// Categoria 1 -- N Producto
-Categoria.hasMany(Producto, { foreignKey: 'categoria_id' });
-Producto.belongsTo(Categoria, { foreignKey: 'categoria_id' });
+// =========================
+// EMPRESA - USUARIO
+// =========================
 
-// Producto 1 -- N MovimientoInventario ; Usuario 1 -- N MovimientoInventario
-Producto.hasMany(MovimientoInventario, { foreignKey: 'producto_id' });
-MovimientoInventario.belongsTo(Producto, { foreignKey: 'producto_id' });
-Usuario.hasMany(MovimientoInventario, { foreignKey: 'usuario_id' });
-MovimientoInventario.belongsTo(Usuario, { foreignKey: 'usuario_id' });
+Empresa.hasMany(Usuario, {
+  foreignKey: 'empresa_id',
+});
 
-// Usuario 1 -- N MovimientoCuenta
-Usuario.hasMany(MovimientoCuenta, { foreignKey: 'usuario_id' });
-MovimientoCuenta.belongsTo(Usuario, { foreignKey: 'usuario_id' });
+Usuario.belongsTo(Empresa, {
+  foreignKey: 'empresa_id',
+});
 
-// Producto 1 -- N Venta ; Usuario 1 -- N Venta
-Producto.hasMany(Venta, { foreignKey: 'producto_id' });
-Venta.belongsTo(Producto, { foreignKey: 'producto_id' });
-Usuario.hasMany(Venta, { foreignKey: 'usuario_id' });
-Venta.belongsTo(Usuario, { foreignKey: 'usuario_id' });
 
-// Producto 1 -- N Alerta
-Producto.hasMany(Alerta, { foreignKey: 'producto_id' });
-Alerta.belongsTo(Producto, { foreignKey: 'producto_id' });
+// =========================
+// ROL - USUARIO
+// =========================
+
+Rol.hasMany(Usuario, {
+  foreignKey: 'rol_id',
+});
+
+Usuario.belongsTo(Rol, {
+  foreignKey: 'rol_id',
+});
+
+
+// =========================
+// EMPRESA - CATEGORIA
+// =========================
+
+Empresa.hasMany(Categoria, {
+  foreignKey: 'empresa_id',
+});
+
+Categoria.belongsTo(Empresa, {
+  foreignKey: 'empresa_id',
+});
+
+
+// =========================
+// EMPRESA - PRODUCTO
+// =========================
+
+Empresa.hasMany(Producto, {
+  foreignKey: 'empresa_id',
+});
+
+Producto.belongsTo(Empresa, {
+  foreignKey: 'empresa_id',
+});
+
+
+// =========================
+// CATEGORIA - PRODUCTO
+// =========================
+
+Categoria.hasMany(Producto, {
+  foreignKey: 'categoria_id',
+});
+
+Producto.belongsTo(Categoria, {
+  foreignKey: 'categoria_id',
+});
+
+
+// =========================
+// PRODUCTO - MOVIMIENTO INVENTARIO
+// =========================
+
+Producto.hasMany(MovimientoInventario, {
+  foreignKey: 'producto_id',
+});
+
+MovimientoInventario.belongsTo(Producto, {
+  foreignKey: 'producto_id',
+});
+
+
+// =========================
+// USUARIO - MOVIMIENTO INVENTARIO
+// =========================
+
+Usuario.hasMany(MovimientoInventario, {
+  foreignKey: 'usuario_id',
+});
+
+MovimientoInventario.belongsTo(Usuario, {
+  foreignKey: 'usuario_id',
+});
+
+
+// =========================
+// USUARIO - MOVIMIENTO CUENTA
+// =========================
+
+Usuario.hasMany(MovimientoCuenta, {
+  foreignKey: 'usuario_id',
+});
+
+MovimientoCuenta.belongsTo(Usuario, {
+  foreignKey: 'usuario_id',
+});
+
+
+// =========================
+// PRODUCTO - VENTA
+// =========================
+
+Producto.hasMany(Venta, {
+  foreignKey: 'producto_id',
+});
+
+Venta.belongsTo(Producto, {
+  foreignKey: 'producto_id',
+});
+
+
+// =========================
+// USUARIO - VENTA
+// =========================
+
+Usuario.hasMany(Venta, {
+  foreignKey: 'usuario_id',
+});
+
+Venta.belongsTo(Usuario, {
+  foreignKey: 'usuario_id',
+});
+
+
+// =========================
+// PRODUCTO - ALERTA
+// =========================
+
+Producto.hasMany(Alerta, {
+  foreignKey: 'producto_id',
+});
+
+Alerta.belongsTo(Producto, {
+  foreignKey: 'producto_id',
+});
+
 
 module.exports = {
   sequelize,
+  Empresa,
   Rol,
   Usuario,
   Categoria,

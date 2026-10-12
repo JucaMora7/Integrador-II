@@ -1,17 +1,66 @@
+
 const { Op, fn, col, literal } = require('sequelize');
-const { Venta, Producto, MovimientoCuenta } = require('../models');
+const {
+  Venta,
+  Producto,
+  MovimientoCuenta,
+  Usuario,
+} = require('../models');
 
 function rangoFechas(desde, hasta) {
   if (!desde || !hasta) return null;
-  return { [Op.between]: [new Date(desde), new Date(`${hasta}T23:59:59.999Z`)] };
+
+  return {
+    [Op.between]: [
+      new Date(desde),
+      new Date(`${hasta}T23:59:59.999Z`),
+    ],
+  };
 }
 
-// Reporte de productos más vendidos (destacados)
+// Valida que la petición autenticada tenga una empresa asignada.
+function obtenerEmpresaId(req) {
+  const empresaId = Number(req.usuario?.empresa_id);
+
+  if (!Number.isInteger(empresaId) || empresaId <= 0) {
+    const error = new Error(
+      'El usuario autenticado no tiene una empresa válida.'
+    );
+    error.status = 403;
+    throw error;
+  }
+
+  return empresaId;
+}
+
+// Filtros comunes para impedir cruces entre empresas.
+function incluirUsuarioDeEmpresa(empresaId) {
+  return {
+    model: Usuario,
+    attributes: [],
+    where: { empresa_id: empresaId },
+    required: true,
+  };
+}
+
+function incluirProductoDeEmpresa(empresaId, attributes = ['nombre']) {
+  return {
+    model: Producto,
+    attributes,
+    where: { empresa_id: empresaId },
+    required: true,
+  };
+}
+
+// Productos más vendidos.
 async function masVendidos(req, res, next) {
   try {
+    const empresaId = obtenerEmpresaId(req);
     const { desde, hasta, limite = 10 } = req.query;
-    const where = {};
+
     const fecha = rangoFechas(desde, hasta);
+    const where = {};
+
     if (fecha) where.fecha = fecha;
 
     const resultado = await Venta.findAll({
@@ -20,10 +69,16 @@ async function masVendidos(req, res, next) {
         'producto_id',
         [fn('SUM', col('cantidad')), 'unidades_vendidas'],
       ],
-      include: { model: Producto, attributes: ['nombre'] },
-      group: ['producto_id', 'Producto.id'],
+      include: [
+        incluirProductoDeEmpresa(empresaId),
+        incluirUsuarioDeEmpresa(empresaId),
+      ],
+      group: ['Venta.producto_id', 'Producto.id'],
       order: [[literal('unidades_vendidas'), 'DESC']],
-      limit: Number(limite),
+      limit: Math.min(
+        100,
+        Math.max(1, Number.parseInt(limite, 10) || 10)
+      ),
     });
 
     res.json(resultado);
@@ -32,12 +87,15 @@ async function masVendidos(req, res, next) {
   }
 }
 
-// Reporte de productos menos vendidos
+// Productos menos vendidos.
 async function menosVendidos(req, res, next) {
   try {
+    const empresaId = obtenerEmpresaId(req);
     const { desde, hasta, limite = 10 } = req.query;
-    const where = {};
+
     const fecha = rangoFechas(desde, hasta);
+    const where = {};
+
     if (fecha) where.fecha = fecha;
 
     const resultado = await Venta.findAll({
@@ -46,10 +104,16 @@ async function menosVendidos(req, res, next) {
         'producto_id',
         [fn('SUM', col('cantidad')), 'unidades_vendidas'],
       ],
-      include: { model: Producto, attributes: ['nombre'] },
-      group: ['producto_id', 'Producto.id'],
+      include: [
+        incluirProductoDeEmpresa(empresaId),
+        incluirUsuarioDeEmpresa(empresaId),
+      ],
+      group: ['Venta.producto_id', 'Producto.id'],
       order: [[literal('unidades_vendidas'), 'ASC']],
-      limit: Number(limite),
+      limit: Math.min(
+        100,
+        Math.max(1, Number.parseInt(limite, 10) || 10)
+      ),
     });
 
     res.json(resultado);
@@ -58,30 +122,59 @@ async function menosVendidos(req, res, next) {
   }
 }
 
-// Resumen financiero del período: ventas, egresos, balance, transacciones, ticket promedio
+// Resumen financiero de la empresa autenticada.
 async function resumenFinanciero(req, res, next) {
   try {
+    const empresaId = obtenerEmpresaId(req);
     const { desde, hasta } = req.query;
+
     const whereVentas = {};
     const whereCuentas = {};
+
     const fechaVenta = rangoFechas(desde, hasta);
-    if (fechaVenta) whereVentas.fecha = fechaVenta;
-    if (desde && hasta) whereCuentas.fecha = { [Op.between]: [desde, hasta] };
 
-    const ventas = await Venta.findAll({ where: whereVentas });
-    const totalVentas = ventas.reduce((acc, v) => acc + Number(v.cantidad) * Number(v.precio_unitario), 0);
+    if (fechaVenta) {
+      whereVentas.fecha = fechaVenta;
+    }
 
-    const movimientos = await MovimientoCuenta.findAll({ where: whereCuentas });
+    if (desde && hasta) {
+      whereCuentas.fecha = {
+        [Op.between]: [desde, hasta],
+      };
+    }
+
+    const ventas = await Venta.findAll({
+      where: whereVentas,
+      include: [
+        incluirUsuarioDeEmpresa(empresaId),
+        incluirProductoDeEmpresa(empresaId, []),
+      ],
+    });
+
+    const totalVentas = ventas.reduce(
+      (total, venta) =>
+        total +
+        Number(venta.cantidad) * Number(venta.precio_unitario),
+      0
+    );
+
+    const movimientos = await MovimientoCuenta.findAll({
+      where: whereCuentas,
+      include: [incluirUsuarioDeEmpresa(empresaId)],
+    });
+
     const totalIngresosCuentas = movimientos
-      .filter((m) => m.tipo === 'ingreso')
-      .reduce((acc, m) => acc + Number(m.valor), 0);
+      .filter((movimiento) => movimiento.tipo === 'ingreso')
+      .reduce((total, movimiento) => total + Number(movimiento.valor), 0);
+
     const totalEgresos = movimientos
-      .filter((m) => m.tipo === 'egreso')
-      .reduce((acc, m) => acc + Number(m.valor), 0);
+      .filter((movimiento) => movimiento.tipo === 'egreso')
+      .reduce((total, movimiento) => total + Number(movimiento.valor), 0);
 
     const totalIngresos = totalVentas + totalIngresosCuentas;
     const transacciones = ventas.length + movimientos.length;
-    const ticketPromedio = ventas.length > 0 ? totalVentas / ventas.length : 0;
+    const ticketPromedio =
+      ventas.length > 0 ? totalVentas / ventas.length : 0;
 
     res.json({
       total_ventas: totalVentas,
@@ -96,17 +189,30 @@ async function resumenFinanciero(req, res, next) {
   }
 }
 
-// Productos con stock por debajo del umbral mínimo configurado
+// Productos con stock por debajo del umbral.
 async function stockBajo(req, res, next) {
   try {
+    const empresaId = obtenerEmpresaId(req);
+
     const productos = await Producto.findAll({
-      where: literal('"cantidad_actual" < "umbral_minimo"'),
+      where: {
+        empresa_id: empresaId,
+        [Op.and]: [
+          literal('"cantidad_actual" < "umbral_minimo"'),
+        ],
+      },
       order: [['cantidad_actual', 'ASC']],
     });
+
     res.json(productos);
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { masVendidos, menosVendidos, resumenFinanciero, stockBajo };
+module.exports = {
+  masVendidos,
+  menosVendidos,
+  resumenFinanciero,
+  stockBajo,
+};

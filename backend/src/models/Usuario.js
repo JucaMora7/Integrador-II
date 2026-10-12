@@ -9,28 +9,36 @@ const Usuario = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+
     nombre: {
       type: DataTypes.STRING(100),
       allowNull: false,
     },
+
     apellido: {
       type: DataTypes.STRING(100),
       allowNull: true,
     },
+
     correo: {
       type: DataTypes.STRING(150),
       allowNull: false,
       unique: true,
-      validate: { isEmail: true },
+      validate: {
+        isEmail: true,
+      },
     },
+
     contrasena_hash: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    empresa: {
-      type: DataTypes.STRING(150),
-      allowNull: true,
+
+    empresa_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
+
     rol_id: {
       type: DataTypes.INTEGER,
       allowNull: false,

@@ -92,7 +92,7 @@ export default function RegistroPage() {
           </div>
           <div className="form-group">
             <label className="form-label">Empresa / Negocio</label>
-            <input className="form-input" type="text" placeholder="Nombre de tu negocio" value={form.empresa} onChange={actualizarCampo('empresa')} />
+            <input className="form-input" type="text" placeholder="Nombre de tu negocio" value={form.empresa} onChange={actualizarCampo('empresa')} required/>
           </div>
           <button className="btn-primary" type="submit" disabled={cargando}>
             {cargando ? 'Creando cuenta...' : 'Crear cuenta'}

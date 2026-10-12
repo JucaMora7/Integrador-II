@@ -1,4 +1,5 @@
 const { DataTypes } = require('sequelize');
+
 const sequelize = require('../config/database');
 
 const Categoria = sequelize.define(
@@ -9,12 +10,18 @@ const Categoria = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+
+    empresa_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+
     nombre: {
       type: DataTypes.STRING(80),
       allowNull: false,
-      unique: true,
     },
   },
+
   {
     tableName: 'categorias',
     timestamps: false,
