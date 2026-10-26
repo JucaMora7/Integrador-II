@@ -1,7 +1,7 @@
-# Sistema Web de Gestión Comercial — Comuna 10, Neiva
+# Sistema Web de Gestión Comercial, Neiva
 
 Producto mínimo funcional (PMF) para la gestión de inventarios, ventas y cuentas
-básicas de pequeños comercios de la Comuna 10 del municipio de Neiva, desarrollado
+básicas de pequeños comercios de municipio de Neiva, desarrollado
 como Proyecto Integrador II (Universidad Surcolombiana).
 
 Arquitectura de tres capas definida en el documento del proyecto:
